@@ -27,6 +27,8 @@
 
 #include <math.h>
 #include <EEPROM.h>
+#include <stdio.h>
+
 #include "EEPROMwrite.h"
 #include "fastio.h"
 #include "Configuration.h"
@@ -39,7 +41,7 @@
 #include "motion_control.h"
 #include "cardreader.h"
 #include "watchdog.h"
-#include <stdio.h>
+
 
 
 #define VERSION_STRING  "1.0.0 Beta 1"
@@ -112,6 +114,7 @@
 // M500 - stores paramters in EEPROM
 // M501 - reads parameters from EEPROM (if you need reset them after you changed them temporarily).  
 // M502 - reverts to the default "factory settings".  You still need to store them in EEPROM afterwards if you want to.
+// M503 - print the current settings (from memory not from eeprom)
 
 //Stepper Movement Variables
 
@@ -167,7 +170,8 @@ static char *strchr_pointer; // just a pointer to find chars in the cmd string l
 
 const int sensitive_pins[] = SENSITIVE_PINS; // Sensitive pin list for M42
 
-static float tt = 0, bt = 0;
+//static float tt = 0;
+//static float bt = 0;
 
 //Inactivity shutdown variables
 static unsigned long previous_millis_cmd = 0;
@@ -235,7 +239,7 @@ void setup()
     fromsd[i] = false;
   }
   
-  RetrieveSettings(); // loads data from EEPROM if available
+  EEPROM_RetrieveSettings(); // loads data from EEPROM if available
 
   for(int8_t i=0; i < NUM_AXIS; i++)
   {
@@ -527,40 +531,65 @@ FORCE_INLINE void process_commands()
       saved_feedmultiply = feedmultiply;
       feedmultiply = 100;
       
+      enable_endstops(true);
+      
       for(int8_t i=0; i < NUM_AXIS; i++) {
         destination[i] = current_position[i];
       }
       feedrate = 0.0;
       home_all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2])));
-      
+      #ifdef QUICK_HOME
       if( code_seen(axis_codes[0]) && code_seen(axis_codes[1]) )  //first diagonal move
       {
-        current_position[X_AXIS] = 0; current_position[Y_AXIS] = 0;
+        current_position[X_AXIS] = 0;current_position[Y_AXIS] = 0;  
         plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]); 
-        destination[X_AXIS] = 1.5 * X_MAX_LENGTH * X_HOME_DIR;
-        destination[Y_AXIS] = 1.5 * Y_MAX_LENGTH * Y_HOME_DIR; 
-        feedrate =homing_feedrate[X_AXIS]; 
+        destination[X_AXIS] = 1.5 * X_MAX_LENGTH * X_HOME_DIR;destination[Y_AXIS] = 1.5 * Y_MAX_LENGTH * Y_HOME_DIR;  
+        feedrate = homing_feedrate[X_AXIS]; 
         if(homing_feedrate[Y_AXIS]<feedrate)
           feedrate =homing_feedrate[Y_AXIS]; 
-        prepare_move();
-        current_position[X_AXIS] = 0; current_position[Y_AXIS] = 0;
+        prepare_move(); 
+    
+        current_position[X_AXIS] = (X_HOME_DIR == -1) ? 0 : X_MAX_LENGTH;
+        current_position[Y_AXIS] = (Y_HOME_DIR == -1) ? 0 : Y_MAX_LENGTH;
+        plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
+        destination[X_AXIS] = current_position[X_AXIS];
+        destination[Y_AXIS] = current_position[Y_AXIS];
+        feedrate = 0.0;
+        st_synchronize();
+        plan_set_position(0, 0, current_position[Z_AXIS], current_position[E_AXIS]);
+        current_position[X_AXIS] = 0;current_position[Y_AXIS] = 0;
+        endstops_hit_on_purpose();
       }
+      #endif
       
       if((home_all_axis) || (code_seen(axis_codes[X_AXIS]))) 
       {
         HOMEAXIS(X);
-	current_position[0]=code_value()+add_homeing[0];
       }
 
       if((home_all_axis) || (code_seen(axis_codes[Y_AXIS]))) {
        HOMEAXIS(Y);
-       current_position[1]=code_value()+add_homeing[1];
       }
 
       if((home_all_axis) || (code_seen(axis_codes[Z_AXIS]))) {
         HOMEAXIS(Z);
-	current_position[2]=code_value()+add_homeing[2];
-      }       
+      }
+      
+      if(code_seen(axis_codes[X_AXIS])) 
+      {
+        current_position[0]=code_value()+add_homeing[0];
+      }
+
+      if(code_seen(axis_codes[Y_AXIS])) {
+       current_position[1]=code_value()+add_homeing[1];
+      }
+
+      if(code_seen(axis_codes[Z_AXIS])) {
+        current_position[2]=code_value()+add_homeing[2];
+      }
+      #ifdef ENDSTOPS_ONLY_FOR_HOMING
+        enable_endstops(false);
+      #endif
       
       feedrate = saved_feedrate;
       feedmultiply = saved_feedmultiply;
@@ -669,6 +698,7 @@ FORCE_INLINE void process_commands()
       SERIAL_ECHO_START;
       SERIAL_ECHOLN(time);
       LCD_MESSAGE(time);
+      autotempShutdown();
     }
     break;
     case 42: //M42 -Change pin status via gcode
@@ -1031,17 +1061,22 @@ FORCE_INLINE void process_commands()
     break;
     case 500: // Store settings in EEPROM
     {
-        StoreSettings();
+        EEPROM_StoreSettings();
     }
     break;
     case 501: // Read settings from EEPROM
     {
-      RetrieveSettings();
+      EEPROM_RetrieveSettings();
     }
     break;
     case 502: // Revert to default settings
     {
-      RetrieveSettings(true);
+      EEPROM_RetrieveSettings(true);
+    }
+    break;
+    case 503: // print settings currently in memory
+    {
+      EEPROM_printSettings();
     }
     break;
 

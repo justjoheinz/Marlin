@@ -34,7 +34,7 @@ void st_set_position(const long &x, const long &y, const long &z, const long &e)
 void st_set_e_position(const long &e);
 
 // Get current position in steps
-long st_get_position(char axis);
+long st_get_position(uint8_t axis);
 
 // The stepper subsystem goes to sleep when it runs out of things to execute. Call this
 // to notify the subsystem that it is time to go to work.
@@ -43,6 +43,8 @@ void st_wake_up();
   
 void checkHitEndstops(); //call from somwhere to create an serial error message with the locations the endstops where hit, in case they were triggered
 void endstops_hit_on_purpose(); //avoid creation of the message, i.e. after homeing and before a routine call of checkHitEndstops();
+
+void enable_endstops(bool check); // Enable/disable endstop checking
 
 void checkStepperErrors(); //Print errors detected by the stepper
 

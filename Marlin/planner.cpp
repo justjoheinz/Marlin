@@ -91,7 +91,7 @@ static float previous_nominal_speed; // Nominal speed of previous path line segm
 #ifdef AUTOTEMP
     float autotemp_max=250;
     float autotemp_min=210;
-    float autotemp_factor=1;
+    float autotemp_factor=0.1;
     bool autotemp_enabled=false;
 #endif
 
@@ -107,10 +107,12 @@ volatile unsigned char block_buffer_tail;           // Index of the block to pro
 //=============================private variables ============================
 //===========================================================================
 
-// Used for the frequency limit
-static unsigned char old_direction_bits = 0;               // Old direction bits. Used for speed calculations
-static long x_segment_time[3]={0,0,0};                     // Segment times (in us). Used for speed calculations
-static long y_segment_time[3]={0,0,0};
+#ifdef XY_FREQUENCY_LIMIT
+  // Used for the frequency limit
+  static unsigned char old_direction_bits = 0;               // Old direction bits. Used for speed calculations
+  static long x_segment_time[3]={0,0,0};                     // Segment times (in us). Used for speed calculations
+  static long y_segment_time[3]={0,0,0};
+#endif
 
 // Returns the index of the next block in the ring buffer
 // NOTE: Removed modulo (%) operator, which uses an expensive divide and multiplication.
@@ -198,7 +200,6 @@ void calculate_trapezoid_for_block(block_t *block, float entry_factor, float exi
   
  // block->accelerate_until = accelerate_steps;
  // block->decelerate_after = accelerate_steps+plateau_steps;
-  
   CRITICAL_SECTION_START;  // Fill variables used by the stepper in a critical section
   if(block->busy == false) { // Don't update variables if block is busy.
     block->accelerate_until = accelerate_steps;
@@ -255,7 +256,7 @@ void planner_reverse_pass_kernel(block_t *previous, block_t *current, block_t *n
 // planner_recalculate() needs to go over the current plan twice. Once in reverse and once forward. This 
 // implements the reverse pass.
 void planner_reverse_pass() {
-  char block_index = block_buffer_head;
+  uint8_t block_index = block_buffer_head;
   if(((block_buffer_head-block_buffer_tail + BLOCK_BUFFER_SIZE) & (BLOCK_BUFFER_SIZE - 1)) > 3) {
     block_index = (block_buffer_head - 3) & (BLOCK_BUFFER_SIZE - 1);
     block_t *block[3] = { NULL, NULL, NULL };
@@ -294,7 +295,7 @@ void planner_forward_pass_kernel(block_t *previous, block_t *current, block_t *n
 // planner_recalculate() needs to go over the current plan twice. Once in reverse and once forward. This 
 // implements the forward pass.
 void planner_forward_pass() {
-  char block_index = block_buffer_tail;
+  uint8_t block_index = block_buffer_tail;
   block_t *block[3] = { NULL, NULL, NULL };
 
   while(block_index != block_buffer_head) {
@@ -384,7 +385,7 @@ void getHighESpeed()
     return; //do nothing
   
   float high=0;
-  char block_index = block_buffer_tail;
+  uint8_t block_index = block_buffer_tail;
   
   while(block_index != block_buffer_head) {
     float se=block_buffer[block_index].steps_e/float(block_buffer[block_index].step_event_count)*block_buffer[block_index].nominal_rate;
@@ -423,7 +424,7 @@ void check_axes_activity() {
   block_t *block;
 
   if(block_buffer_tail != block_buffer_head) {
-    char block_index = block_buffer_tail;
+    uint8_t block_index = block_buffer_tail;
     while(block_index != block_buffer_head) {
       block = &block_buffer[block_index];
       if(block->steps_x != 0) x_active++;
@@ -482,7 +483,7 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
   // Bail if this is a zero-length block
   if (block->step_event_count <=dropsegments) { return; };
 
-  // Compute direction bits for this block
+  // Compute direction bits for this block 
   block->direction_bits = 0;
   if (target[X_AXIS] < position[X_AXIS]) { block->direction_bits |= (1<<X_AXIS); }
   if (target[Y_AXIS] < position[Y_AXIS]) { block->direction_bits |= (1<<Y_AXIS); }
@@ -519,8 +520,7 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
   block->nominal_speed = block->millimeters * inverse_second; // (mm/sec) Always > 0
   block->nominal_rate = ceil(block->step_event_count * inverse_second); // (step/sec) Always > 0
 
-  //  segment time im micro seconds
-  long segment_time = lround(1000000.0/inverse_second);
+  
  
 
   if (block->steps_e == 0) {
@@ -538,6 +538,8 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
 #endif
 
 /*
+  //  segment time im micro seconds
+  long segment_time = lround(1000000.0/inverse_second);
   if ((blockcount>0) && (blockcount < (BLOCK_BUFFER_SIZE - 4))) {
     if (segment_time<minsegmenttime)  { // buffer is draining, add extra time.  The amount of time added increases if the buffer is still emptied more.
         segment_time=segment_time+lround(2*(minsegmenttime-segment_time)/blockcount);
@@ -722,7 +724,7 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
     else {
       long acc_dist = estimate_acceleration_distance(0, block->nominal_rate, block->acceleration_st);
       float advance = (STEPS_PER_CUBIC_MM_E * EXTRUDER_ADVANCE_K) * 
-        (current_speed[E_AXIS] * current_speed[E_AXIS] * EXTRUTION_AREA * EXTRUTION_AREA / 3600.0)*65536;
+        (current_speed[E_AXIS] * current_speed[E_AXIS] * EXTRUTION_AREA * EXTRUTION_AREA)*256;
       block->advance = advance;
       if(acc_dist == 0) {
         block->advance_rate = 0;
@@ -731,6 +733,13 @@ void plan_buffer_line(const float &x, const float &y, const float &z, const floa
         block->advance_rate = advance / (float)acc_dist;
       }
     }
+    /*
+    SERIAL_ECHO_START;
+    SERIAL_ECHOPGM("advance :");
+    SERIAL_ECHO(block->advance/256.0);
+    SERIAL_ECHOPGM("advance rate :");
+    SERIAL_ECHOLN(block->advance_rate/256.0);
+    */
   #endif // ADVANCE
 
 
