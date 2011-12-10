@@ -110,6 +110,7 @@
 // M206 - set additional homeing offset
 // M220 - set speed factor override percentage S:factor in percent
 // M301 - Set PID parameters P I and D
+// M302 - Allow cold extrudes
 // M400 - Finish all moves
 // M500 - stores paramters in EEPROM
 // M501 - reads parameters from EEPROM (if you need reset them after you changed them temporarily).  
@@ -176,7 +177,8 @@ const int sensitive_pins[] = SENSITIVE_PINS; // Sensitive pin list for M42
 //Inactivity shutdown variables
 static unsigned long previous_millis_cmd = 0;
 static unsigned long max_inactive_time = 0;
-static unsigned long stepper_inactive_time = 0;
+static unsigned long stepper_inactive_time = DEFAULT_STEPPER_DEACTIVE_TIME*1000;
+static unsigned long last_stepperdisabled_time=30*1000; //first release check after 30 seconds
 
 static unsigned long starttime=0;
 static unsigned long stoptime=0;
@@ -499,19 +501,16 @@ FORCE_INLINE void process_commands()
     case 1: // G1
       get_coordinates(); // For X Y Z E F
       prepare_move();
-      previous_millis_cmd = millis();
       //ClearToSend();
       return;
       //break;
     case 2: // G2  - CW ARC
       get_arc_coordinates();
       prepare_arc_move(true);
-      previous_millis_cmd = millis();
       return;
     case 3: // G3  - CCW ARC
       get_arc_coordinates();
       prepare_arc_move(false);
-      previous_millis_cmd = millis();
       return;
     case 4: // G4 dwell
       LCD_MESSAGEPGM("DWELL...");
@@ -521,7 +520,7 @@ FORCE_INLINE void process_commands()
       
       st_synchronize();
       codenum += millis();  // keep track of when we started waiting
-      
+      previous_millis_cmd = millis();
       while(millis()  < codenum ){
         manage_heater();
       }
@@ -837,6 +836,7 @@ FORCE_INLINE void process_commands()
         }
         LCD_MESSAGEPGM("Heating done.");
         starttime=millis();
+        previous_millis_cmd = millis();
       }
       break;
     case 190: // M190 - Wait bed for heater to reach target.
@@ -860,6 +860,7 @@ FORCE_INLINE void process_commands()
           manage_heater();
         }
         LCD_MESSAGEPGM("Bed done.");
+        previous_millis_cmd = millis();
     #endif
     break;
 
@@ -903,18 +904,22 @@ FORCE_INLINE void process_commands()
       }
       else
       { 
-        #if ((E_ENABLE_PIN != X_ENABLE_PIN) && (E_ENABLE_PIN != Y_ENABLE_PIN)) // Only enable on boards that have seperate ENABLE_PINS
-        if(code_seen('E')) {
+        bool all_axis = !((code_seen(axis_codes[0])) || (code_seen(axis_codes[1])) || (code_seen(axis_codes[2]))|| (code_seen(axis_codes[3])));
+        if(all_axis)
+        {
+          finishAndDisableSteppers();
+        }
+        else
+        {
           st_synchronize();
-          LCD_MESSAGEPGM("Free Move");
-          disable_e();
+          if(code_seen('X')) disable_x();
+          if(code_seen('Y')) disable_y();
+          if(code_seen('Z')) disable_z();
+          #if ((E_ENABLE_PIN != X_ENABLE_PIN) && (E_ENABLE_PIN != Y_ENABLE_PIN)) // Only enable on boards that have seperate ENABLE_PINS
+            if(code_seen('E')) disable_e();
+          #endif 
+          LCD_MESSAGEPGM("Partial Release");
         }
-        else {
-          finishAndDisableSteppers();
-        }
-        #else
-          finishAndDisableSteppers();
-        #endif
       }
       break;
     case 85: // M85
@@ -984,7 +989,11 @@ FORCE_INLINE void process_commands()
     case 201: // M201
       for(int8_t i=0; i < NUM_AXIS; i++) 
       {
-        if(code_seen(axis_codes[i])) axis_steps_per_sqr_second[i] = code_value() * axis_steps_per_unit[i];
+        if(code_seen(axis_codes[i]))
+        {
+          max_acceleration_units_per_sq_second[i] = code_value();
+          axis_steps_per_sqr_second[i] = code_value() * axis_steps_per_unit[i];
+        }
       }
       break;
     #if 0 // Not used for Sprinter/grbl gen6
@@ -1054,6 +1063,12 @@ FORCE_INLINE void process_commands()
       }
       break;
     #endif //PIDTEMP
+      
+    case 302: // finish all moves
+    {
+      allow_cold_extrudes(true);
+    }
+    break;
     case 400: // finish all moves
     {
       st_synchronize();
@@ -1145,6 +1160,7 @@ FORCE_INLINE void get_arc_coordinates()
 
 void prepare_move()
 {
+  
   if (min_software_endstops) {
     if (destination[X_AXIS] < 0) destination[X_AXIS] = 0.0;
     if (destination[Y_AXIS] < 0) destination[Y_AXIS] = 0.0;
@@ -1161,6 +1177,7 @@ void prepare_move()
   for(int8_t i=0; i < NUM_AXIS; i++) {
     current_position[i] = destination[i];
   }
+  previous_millis_cmd = millis();
 }
 
 void prepare_arc_move(char isclockwise) {
@@ -1175,6 +1192,7 @@ void prepare_arc_move(char isclockwise) {
   for(int8_t i=0; i < NUM_AXIS; i++) {
     current_position[i] = destination[i];
   }
+  previous_millis_cmd = millis();
 }
 
 void manage_inactivity(byte debug) 
@@ -1182,14 +1200,34 @@ void manage_inactivity(byte debug)
   if( (millis()-previous_millis_cmd) >  max_inactive_time ) 
     if(max_inactive_time) 
       kill(); 
-  if( (millis()-previous_millis_cmd) >  stepper_inactive_time ) 
-    if(stepper_inactive_time) 
-    { 
-      disable_x(); 
-      disable_y(); 
-      disable_z(); 
-      disable_e(); 
+  if(stepper_inactive_time)  
+  if( (millis()-last_stepperdisabled_time) >  stepper_inactive_time ) 
+  {
+    if(previous_millis_cmd>last_stepperdisabled_time)
+      last_stepperdisabled_time=previous_millis_cmd;
+    else
+    {
+      enquecommand(DEFAULT_STEPPER_DEACTIVE_COMMAND); 
+      last_stepperdisabled_time=millis();
     }
+  }
+  #ifdef EXTRUDER_RUNOUT_PREVENT
+    if( (millis()-previous_millis_cmd) >  EXTRUDER_RUNOUT_SECONDS*1000 ) 
+    if(degHotend(active_extruder)>EXTRUDER_RUNOUT_MINTEMP)
+    {
+     enable_e();
+     float oldepos=current_position[E_AXIS];
+     float oldedes=destination[E_AXIS];
+     plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], 
+                      current_position[E_AXIS]+EXTRUDER_RUNOUT_EXTRUDE*EXTRUDER_RUNOUT_ESTEPS/axis_steps_per_unit[E_AXIS], 
+                      EXTRUDER_RUNOUT_SPEED/60.*EXTRUDER_RUNOUT_ESTEPS/axis_steps_per_unit[E_AXIS], active_extruder);
+     current_position[E_AXIS]=oldepos;
+     destination[E_AXIS]=oldedes;
+     plan_set_e_position(oldepos);
+     previous_millis_cmd=millis();
+     enquecommand(DEFAULT_STEPPER_DEACTIVE_COMMAND);
+    }
+  #endif
   check_axes_activity();
 }
 
