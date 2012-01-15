@@ -53,12 +53,19 @@
 //#define HEATER_1_USES_THERMISTOR
 //#define HEATER_2_USES_THERMISTOR
 //#define HEATER_0_USES_AD595
+#define HEATER_0_USES_AD595
 //#define HEATER_1_USES_AD595
 //#define HEATER_2_USES_AD595
 
 // Select one of these only to define how the bed temp is read.
 #define THERMISTORBED 1
 #define BED_USES_THERMISTOR
+//#define THERMISTORBED 1
+//#define BED_USES_THERMISTOR
+//#define BED_LIMIT_SWITCHING
+#ifdef BED_LIMIT_SWITCHING
+  #define BED_HYSTERESIS 2 //only disable heating if T>target+BED_HYSTERESIS and enable heating if T>target-BED_HYSTERESIS
+#endif
 //#define BED_USES_AD595
 
 #define BED_CHECK_INTERVAL 5000 //ms
@@ -168,6 +175,7 @@
 #define EXTRUDER_RUNOUT_SECONDS 30.
 #define EXTRUDER_RUNOUT_ESTEPS 14. //mm filament
 #define EXTRUDER_RUNOUT_SPEED 1500.  //extrusion speed
+#define EXTRUDER_RUNOUT_EXTRUDE 100
 
 
 //===========================================================================
@@ -212,7 +220,6 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 #define INVERT_E0_DIR false   // for direct drive extruder v9 set to true, for geared extruder set to false
 #define INVERT_E1_DIR false    // for direct drive extruder v9 set to true, for geared extruder set to false
 #define INVERT_E2_DIR false   // for direct drive extruder v9 set to true, for geared extruder set to false
-
 
 //// ENDSTOP SETTINGS:
 // Sets direction of endstops when homing; 1=MAX, -1=MIN
@@ -300,7 +307,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // hooke's law says:		force = k * distance
 // bernoulli's priniciple says:	v ^ 2 / 2 + g . h + pressure / density = constant
 // so: v ^ 2 is proportional to number of steps we advance the extruder
-#define ADVANCE
+//#define ADVANCE
 
 #ifdef ADVANCE
   #define EXTRUDER_ADVANCE_K .0
@@ -361,6 +368,11 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 #define EXTRUDE_MAXLENGTH (X_MAX_LENGTH+Y_MAX_LENGTH) //prevent extrusion of very large distances.
 
 const int dropsegments=5; //everything with less than this number of steps will be ignored as move and joined with the next movement
+
+
+// M240  Triggers a camera by emulating a Canon RC-1 Remote
+// Data from: http://www.doc-diy.net/photo/rc-1_hacked/
+// #define PHOTOGRAPH_PIN     23
 
 //===========================================================================
 //=============================Buffers           ============================
