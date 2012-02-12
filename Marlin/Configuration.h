@@ -4,8 +4,8 @@
 
 
 // This determines the communication speed of the printer
-//#define BAUDRATE 250000
-#define BAUDRATE 115200
+#define BAUDRATE 250000
+//#define BAUDRATE 115200
 //#define BAUDRATE 230400
 
 #define EXTRUDERS 1
@@ -53,7 +53,7 @@
 //#define HEATER_1_USES_THERMISTOR
 //#define HEATER_2_USES_THERMISTOR
 //#define HEATER_0_USES_AD595
-#define HEATER_0_USES_AD595
+//#define HEATER_0_USES_AD595
 //#define HEATER_1_USES_AD595
 //#define HEATER_2_USES_AD595
 
@@ -133,14 +133,14 @@
 
   #ifdef PID_PID
     //PID according to Ziegler-Nichols method
-//    #define  DEFAULT_Kp  (0.6*PID_CRITIAL_GAIN)
-//    #define  DEFAULT_Ki (2*Kp/PID_SWING_AT_CRITIAL*PID_dT)  
-//    #define  DEFAULT_Kd (PID_SWING_AT_CRITIAL/8./PID_dT)  
+    #define  DEFAULT_Kp  (0.6*PID_CRITIAL_GAIN)
+    #define  DEFAULT_Ki (2*Kp/PID_SWING_AT_CRITIAL*PID_dT)  
+    #define  DEFAULT_Kd (PID_SWING_AT_CRITIAL/8./PID_dT)  
 
 // Ultitmaker
-    #define  DEFAULT_Kp  22.2
-    #define  DEFAULT_Ki (1.25*PID_dT)  
-    #define  DEFAULT_Kd (99/PID_dT)  
+//    #define  DEFAULT_Kp  22.2
+//    #define  DEFAULT_Ki (1.25*PID_dT)  
+//    #define  DEFAULT_Kd (99/PID_dT)  
 
 // Makergear
 //    #define  DEFAULT_Kp 7.0
@@ -253,10 +253,10 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 //#define DEFAULT_AXIS_STEPS_PER_UNIT   {40, 40, 3333.92, 67} //sells mendel with v9 extruder
 
 #define DEFAULT_MAX_FEEDRATE          {500, 500, 3.3, 45}    // (mm/sec)    
-#define DEFAULT_MAX_ACCELERATION      {6000,6000,100,10000} // {9000,9000,100,10000}    // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for skeinforge 40+, for older versions raise them a lot.
+#define DEFAULT_MAX_ACCELERATION      {5000,5000,100,10000} // {9000,9000,100,10000}    // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for skeinforge 40+, for older versions raise them a lot.
 
-#define DEFAULT_ACCELERATION          3000    // X, Y, Z and E max acceleration in mm/s^2 for printing moves 
-#define DEFAULT_RETRACT_ACCELERATION  3000   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
+#define DEFAULT_ACCELERATION          2000    // X, Y, Z and E max acceleration in mm/s^2 for printing moves 
+#define DEFAULT_RETRACT_ACCELERATION  2000   // X, Y, Z and E max acceleration in mm/s^2 for r retracts
 
 #define DEFAULT_MINIMUMFEEDRATE       0.0     // minimum feedrate
 #define DEFAULT_MINTRAVELFEEDRATE     0.0
@@ -271,7 +271,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 //default stepper release if idle
 #define DEFAULT_STEPPER_DEACTIVE_TIME 60
-#define DEFAULT_STEPPER_DEACTIVE_COMMAND "M84 X Y E"  //z stays  powered
+#define DEFAULT_STEPPER_DEACTIVE_COMMAND "M84 X Y Z E"  //z stays  powered
 
 
 //===========================================================================
