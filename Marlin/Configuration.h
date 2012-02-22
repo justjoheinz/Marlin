@@ -30,7 +30,7 @@
 // Ultimaker = 7,
 // Teensylu = 8,
 // Gen3+ =9
-#define MOTHERBOARD 3
+#define MOTHERBOARD 7
 
 //===========================================================================
 //=============================Thermal Settings  ============================
@@ -169,14 +169,11 @@
   #endif
 #endif // PIDTEMP
 
-//  extruder run-out prevention. 
-//if the machine is idle, and the temperature over MINTEMP, every couple of SECONDS some filament is extruded
-//#define EXTRUDER_RUNOUT_PREVENT  
-#define EXTRUDER_RUNOUT_MINTEMP 190  
-#define EXTRUDER_RUNOUT_SECONDS 30.
-#define EXTRUDER_RUNOUT_ESTEPS 14. //mm filament
-#define EXTRUDER_RUNOUT_SPEED 1500.  //extrusion speed
-#define EXTRUDER_RUNOUT_EXTRUDE 100
+//this prevents dangerous Extruder moves, i.e. if the temperature is under the limit
+//can be software-disabled for whatever purposes by
+#define PREVENT_DANGEROUS_EXTRUDE
+#define EXTRUDE_MINTEMP 170
+#define EXTRUDE_MAXLENGTH (X_MAX_LENGTH+Y_MAX_LENGTH) //prevent extrusion of very large distances.
 
 
 //===========================================================================
@@ -218,12 +215,12 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Sets direction of endstops when homing; 1=MAX, -1=MIN
 #define X_HOME_DIR -1
 #define Y_HOME_DIR -1
-#define Z_HOME_DIR  1
+#define Z_HOME_DIR -1
 
-#define min_software_endstops false //If true, axis won't move to coordinates less than zero.
-#define max_software_endstops false  //If true, axis won't move to coordinates greater than the defined lengths below.
-#define X_MAX_LENGTH 100
-#define Y_MAX_LENGTH 100
+#define min_software_endstops true //If true, axis won't move to coordinates less than zero.
+#define max_software_endstops true  //If true, axis won't move to coordinates greater than the defined lengths below.
+#define X_MAX_LENGTH 205
+#define Y_MAX_LENGTH 205
 #define Z_MAX_LENGTH 200
 
 //// MOVEMENT SETTINGS
@@ -316,7 +313,7 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 
 //LCD and SD support
 //#define ULTRA_LCD  //general lcd support, also 16x2
-//#define SDSUPPORT // Enable SD Card Support in Hardware Console
+#define SDSUPPORT // Enable SD Card Support in Hardware Console
 
 //#define ULTIPANEL
 #ifdef ULTIPANEL
