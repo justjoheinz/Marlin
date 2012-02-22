@@ -30,7 +30,7 @@
 // Ultimaker = 7,
 // Teensylu = 8,
 // Gen3+ =9
-#define MOTHERBOARD 7
+#define MOTHERBOARD 3
 
 //===========================================================================
 //=============================Thermal Settings  ============================
@@ -218,12 +218,12 @@ const bool Z_ENDSTOPS_INVERTING = true; // set to true to invert the logic of th
 // Sets direction of endstops when homing; 1=MAX, -1=MIN
 #define X_HOME_DIR -1
 #define Y_HOME_DIR -1
-#define Z_HOME_DIR -1
+#define Z_HOME_DIR  1
 
-#define min_software_endstops true //If true, axis won't move to coordinates less than zero.
-#define max_software_endstops true  //If true, axis won't move to coordinates greater than the defined lengths below.
-#define X_MAX_LENGTH 205
-#define Y_MAX_LENGTH 205
+#define min_software_endstops false //If true, axis won't move to coordinates less than zero.
+#define max_software_endstops false  //If true, axis won't move to coordinates greater than the defined lengths below.
+#define X_MAX_LENGTH 100
+#define Y_MAX_LENGTH 100
 #define Z_MAX_LENGTH 200
 
 //// MOVEMENT SETTINGS
