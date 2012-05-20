@@ -45,10 +45,10 @@ typedef struct {
   #endif
 
   // Fields used by the motion planner to manage acceleration
-//  float speed_x, speed_y, speed_z, speed_e;        // Nominal mm/minute for each axis
-  float nominal_speed;                               // The nominal speed for this block in mm/min  
-  float entry_speed;                                 // Entry speed at previous-current junction in mm/min
-  float max_entry_speed;                             // Maximum allowable junction entry speed in mm/min
+//  float speed_x, speed_y, speed_z, speed_e;        // Nominal mm/sec for each axis
+  float nominal_speed;                               // The nominal speed for this block in mm/sec 
+  float entry_speed;                                 // Entry speed at previous-current junction in mm/sec
+  float max_entry_speed;                             // Maximum allowable junction entry speed in mm/sec
   float millimeters;                                 // The total travel of this block in mm
   float acceleration;                                // acceleration mm/sec^2
   unsigned char recalculate_flag;                    // Planner flag to recalculate trapezoids on entry junction
@@ -59,6 +59,7 @@ typedef struct {
   unsigned long initial_rate;                        // The jerk-adjusted step rate at start of block  
   unsigned long final_rate;                          // The minimal rate at exit
   unsigned long acceleration_st;                     // acceleration steps/sec^2
+  unsigned long fan_speed;
   volatile char busy;
 } block_t;
 
@@ -87,6 +88,7 @@ extern float acceleration;         // Normal acceleration mm/s^2  THIS IS THE DE
 extern float retract_acceleration; //  mm/s^2   filament pull-pack and push-forward  while standing still in the other axis M204 TXXXX
 extern float max_xy_jerk; //speed than can be stopped at once, if i understand correctly.
 extern float max_z_jerk;
+extern float max_e_jerk;
 extern float mintravelfeedrate;
 extern unsigned long axis_steps_per_sqr_second[NUM_AXIS];
 

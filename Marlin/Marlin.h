@@ -64,6 +64,7 @@
 
 
 #define SERIAL_PROTOCOL(x) MYSERIAL.print(x);
+#define SERIAL_PROTOCOL_F(x,y) MYSERIAL.print(x,y);
 #define SERIAL_PROTOCOLPGM(x) serialprintPGM(MYPGM(x));
 #define SERIAL_PROTOCOLLN(x) {MYSERIAL.print(x);MYSERIAL.write('\n');}
 #define SERIAL_PROTOCOLLNPGM(x) {serialprintPGM(MYPGM(x));MYSERIAL.write('\n');}
@@ -162,9 +163,16 @@ void ClearToSend();
 void get_coordinates();
 void prepare_move();
 void kill();
+void Stop();
+
+bool IsStopped();
 
 void enquecommand(const char *cmd); //put an ascii command at the end of the current buffer.
 void prepare_arc_move(char isclockwise);
+
+#ifdef FAST_PWM_FAN
+void setPwmFrequency(uint8_t pin, int val);
+#endif
 
 #ifndef CRITICAL_SECTION_START
   #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli();
@@ -175,7 +183,7 @@ extern float homing_feedrate[];
 extern bool axis_relative_modes[];
 extern float current_position[NUM_AXIS] ;
 extern float add_homeing[3];
-extern bool stop_heating_wait;
+extern unsigned char FanSpeed;
 
 // Handling multiple extruders pins
 extern uint8_t active_extruder;

@@ -25,9 +25,6 @@
 // if CooldownNoWait is defined M109 will not wait for the cooldown to finish
 #define CooldownNoWait true
 
-//Do not wait for M109 to finish when printing from SD card
-//#define STOP_HEATING_WAIT_WHEN_SD_PRINTING
-
 #ifdef PIDTEMP
   // this adds an experimental additional term to the heatingpower, proportional to the extrusion speed.
   // if Kc is choosen well, the additional required power due to increased melting should be compensated.
@@ -44,8 +41,8 @@
 // the target temperature is set to mintemp+factor*se[steps/sec] and limited by mintemp and maxtemp
 // you exit the value by any M109 without F*
 // Also, if the temperature is set to a value <mintemp, it is not changed by autotemp.
-// on an ultimaker, some initial testing worked with M109 S215 T260 F0.1 in the start.gcode
-//#define AUTOTEMP
+// on an ultimaker, some initial testing worked with M109 S215 B260 F1 in the start.gcode
+#define AUTOTEMP
 #ifdef AUTOTEMP
   #define AUTOTEMP_OLDWEIGHT 0.98
 #endif
@@ -58,6 +55,17 @@
 #define EXTRUDER_RUNOUT_ESTEPS 14. //mm filament
 #define EXTRUDER_RUNOUT_SPEED 1500.  //extrusion speed
 #define EXTRUDER_RUNOUT_EXTRUDE 100
+
+//These defines help to calibrate the AD595 sensor in case you get wrong temperature measurements.
+//The measured temperature is defined as "actualTemp = (measuredTemp * TEMP_SENSOR_AD595_GAIN) + TEMP_SENSOR_AD595_OFFSET"
+#define TEMP_SENSOR_AD595_OFFSET 0.0
+#define TEMP_SENSOR_AD595_GAIN   1.0
+
+//This is for controlling a fan to cool down the stepper drivers
+//it will turn on when any driver is enabled
+//and turn off after the set amount of seconds from last driver being disabled again
+//#define CONTROLLERFAN_PIN 23 //Pin used for the fan to cool controller, comment out to disable this function
+#define CONTROLLERFAN_SEC 60 //How many seconds, after all motors were disabled, the fan should run
 
 //===========================================================================
 //=============================Mechanical Settings===========================
@@ -74,7 +82,7 @@
 #define X_HOME_RETRACT_MM 5 
 #define Y_HOME_RETRACT_MM 5 
 #define Z_HOME_RETRACT_MM 1 
-#define QUICK_HOME  //if this is defined, if both x and y are to be homed, a diagonal move will be performed initially.
+//#define QUICK_HOME  //if this is defined, if both x and y are to be homed, a diagonal move will be performed initially.
 
 #define AXIS_RELATIVE_MODES {false, false, false, false}
 
@@ -86,8 +94,8 @@
 #define DEFAULT_MINIMUMFEEDRATE       0.0     // minimum feedrate
 #define DEFAULT_MINTRAVELFEEDRATE     0.0
 
-// minimum time in microseconds that a movement needs to take if the buffer is emptied.   Increase this number if you see blobs while printing high speed & high detail.  It will slowdown on the detailed stuff.
-#define DEFAULT_MINSEGMENTTIME        20000   // Obsolete delete this
+// minimum time in microseconds that a movement needs to take if the buffer is emptied.
+#define DEFAULT_MINSEGMENTTIME        20000
 
 // If defined the movements slow down when the look ahead buffer is only half full
 #define SLOWDOWN
@@ -100,7 +108,7 @@
 // Minimum planner junction speed. Sets the default minimum speed the planner plans for at the end
 // of the buffer and all stops. This should not be much greater than zero and should only be changed
 // if unwanted behavior is observed on a user's machine when running at very slow speeds.
-#define MINIMUM_PLANNER_SPEED 2.0 // (mm/sec)
+#define MINIMUM_PLANNER_SPEED 0.05// (mm/sec)
 
 //===========================================================================
 //=============================Additional Features===========================
@@ -139,15 +147,21 @@
 
 #endif // ADVANCE
 
-// A debugging feature to compare calculated vs performed steps, to see if steps are lost by the software.
-//#define DEBUG_STEPS
-
 // Arc interpretation settings:
 #define MM_PER_ARC_SEGMENT 1
 #define N_ARC_CORRECTION 25
 
 const int dropsegments=5; //everything with less than this number of steps will be ignored as move and joined with the next movement
 
+// If you are using a RAMPS board or cheap E-bay purchased boards that do not detect when an SD card is inserted
+// You can get round this by connecting a push button or single throw switch to the pin defined as SDCARDCARDDETECT 
+// in the pins.h file.  When using a push button pulling the pin to ground this will need inverted.  This setting should
+// be commented out otherwise
+#define SDCARDDETECTINVERTED 
+
+#ifdef ULTIPANEL
+ #undef SDCARDDETECTINVERTED
+#endif
 //===========================================================================
 //=============================Buffers           ============================
 //===========================================================================

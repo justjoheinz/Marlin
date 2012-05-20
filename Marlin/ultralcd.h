@@ -7,28 +7,28 @@
   void lcd_init();
   void lcd_status(const char* message);
   void beep();
+  void buttons_init();
   void buttons_check();
-
 
   #define LCD_UPDATE_INTERVAL 100
   #define STATUSTIMEOUT 15000
-
-
-  
   extern LiquidCrystal lcd;
-
-
+  
   #ifdef NEWPANEL
-
-    
     #define EN_C (1<<BLEN_C)
     #define EN_B (1<<BLEN_B)
     #define EN_A (1<<BLEN_A)
     
     #define CLICKED (buttons&EN_C)
     #define BLOCK {blocking=millis()+blocktime;}
-    #define CARDINSERTED (READ(SDCARDDETECT)==0)
-    
+    #if (SDCARDDETECT > -1)
+      #ifdef SDCARDDETECTINVERTED 
+        #define CARDINSERTED (READ(SDCARDDETECT)!=0)
+      #else
+        #define CARDINSERTED (READ(SDCARDDETECT)==0)
+      #endif
+    #endif  //SDCARDTETECTINVERTED
+
   #else
 
     //atomatic, do not change
@@ -50,7 +50,7 @@
   #define blocktime 500
   #define lcdslow 5
     
-  enum MainStatus{Main_Status, Main_Menu, Main_Prepare, Main_Control, Main_SD,Sub_TempControl,Sub_MotionControl};
+  enum MainStatus{Main_Status, Main_Menu, Main_Prepare,Sub_PrepareMove, Main_Control, Main_SD,Sub_TempControl,Sub_MotionControl};
 
   class MainMenu{
   public:
@@ -67,9 +67,10 @@
     void showControl();
     void showControlMotion();
     void showControlTemp();
+    void showAxisMove();
     void showSD();
     bool force_lcd_update;
-    int lastencoderpos;
+    long lastencoderpos;
     int8_t lineoffset;
     int8_t lastlineoffset;
     
@@ -78,11 +79,11 @@
     bool tune;
     
   private:
-    FORCE_INLINE void updateActiveLines(const uint8_t &maxlines,volatile int &encoderpos)
+    FORCE_INLINE void updateActiveLines(const uint8_t &maxlines,volatile long &encoderpos)
     {
       if(linechanging) return; // an item is changint its value, do not switch lines hence
       lastlineoffset=lineoffset; 
-      int curencoderpos=encoderpos;  
+      long curencoderpos=encoderpos;  
       force_lcd_update=false;
       if(  (abs(curencoderpos-lastencoderpos)<lcdslow) ) 
       { 
@@ -129,23 +130,23 @@
 
   //conversion routines, could need some overworking
   char *ftostr51(const float &x);
+  char *ftostr52(const float &x);
   char *ftostr31(const float &x);
   char *ftostr3(const float &x);
 
 
-
+  #define LCD_INIT lcd_init();
   #define LCD_MESSAGE(x) lcd_status(x);
   #define LCD_MESSAGEPGM(x) lcd_statuspgm(MYPGM(x));
   #define LCD_STATUS lcd_status()
 #else //no lcd
+  #define LCD_INIT
   #define LCD_STATUS
   #define LCD_MESSAGE(x)
   #define LCD_MESSAGEPGM(x)
   FORCE_INLINE void lcd_status() {};
-#endif
-  
-#ifndef ULTIPANEL  
- #define CLICKED false
+
+  #define CLICKED false
   #define BLOCK ;
 #endif 
   
@@ -160,4 +161,3 @@ char *itostr3(const int &xx);
 char *itostr4(const int &xx);
 char *ftostr51(const float &x);
 #endif //ULTRALCD
-
