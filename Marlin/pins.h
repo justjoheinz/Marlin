@@ -298,7 +298,7 @@
 #define TEMP_1_PIN         15   // ANALOG NUMBERING
 #define TEMP_2_PIN         -1   // ANALOG NUMBERING
 #define HEATER_BED_PIN     8    // BED
-#define TEMP_BED_PIN       14   // ANALOG NUMBERING
+#define TEMP_BED_PIN       8   // ANALOG NUMBERING
 
 #ifdef ULTRA_LCD
 
@@ -413,7 +413,7 @@
 #define TEMP_0_PIN          2    // MUST USE ANALOG INPUT NUMBERING NOT DIGITAL OUTPUT NUMBERING!!!!!!!!!
 #define TEMP_1_PIN          -1   
 #define TEMP_2_PIN          -1   
-#define TEMP_BED_PIN        1    // MUST USE ANALOG INPUT NUMBERING NOT DIGITAL OUTPUT NUMBERING!!!!!!!!!
+#define TEMP_BED_PIN        8    // MUST USE ANALOG INPUT NUMBERING NOT DIGITAL OUTPUT NUMBERING!!!!!!!!!
 #endif
 
 // SPI for Max6675 Thermocouple 
